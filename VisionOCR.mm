@@ -56,10 +56,10 @@ NSError* recognize(CGImageRef image, NSMutableArray<VNRecognizedText*>* results)
     auto handler = [[VNImageRequestHandler alloc]
                     initWithCGImage:image
                     options:@{}];
-    
+
     auto group = dispatch_group_create();
     __block NSError* ocr_error = nil;
-    
+
     auto request = [[VNRecognizeTextRequest alloc]
                     initWithCompletionHandler:^(VNRequest * _Nonnull request, NSError * _Nullable error) {
         if (error) {
@@ -67,7 +67,7 @@ NSError* recognize(CGImageRef image, NSMutableArray<VNRecognizedText*>* results)
             dispatch_group_leave(group);
             return;
         }
-        
+
         if (request.results) {
             for (VNRecognizedTextObservation* observation in request.results) {
                 [results addObject:[observation topCandidates:1][0]];
@@ -76,11 +76,11 @@ NSError* recognize(CGImageRef image, NSMutableArray<VNRecognizedText*>* results)
         dispatch_group_leave(group);
     }];
     request.recognitionLanguages = @[@"zh-Hans", @"en-US"];
-    
+
     dispatch_group_enter(group);
     [handler performRequests:@[request] error: &ocr_error];
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-    
+
     return ocr_error;
 }
 
@@ -112,30 +112,35 @@ OCR_ERROR PaddleOcrRec(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t 
         || out_size == nullptr) {
         return OCR_FAILURE;
     }
-    
+
     cv::Mat srcimg = decode(encode_buf, encode_buf_size);
     if (srcimg.empty()) {
         return OCR_FAILURE;
     }
-    
+
     auto image = CGImageFromCVMat(srcimg);
-    
+
     auto ocr_results = [[NSMutableArray<VNRecognizedText*> alloc] init];
     auto ocr_error = recognize(image, ocr_results);
-    
+
+    CGImageRelease(image);
+
     if (ocr_error) {
+        [ocr_error release];
         return OCR_FAILURE;
     }
-    
+
     auto count = ocr_results.count > 256 ? 256 : ocr_results.count;
     *out_size = count;
-    
-    for (int i = 0; i < count; i++) {
+
+    for (auto i = 0u; i < count; i++) {
         auto candidate = ocr_results[i];
         out_strs[i] = const_cast<char*>([candidate.string cStringUsingEncoding:NSUTF8StringEncoding]);
         out_scores[i] = candidate.confidence;
     }
-    
+
+    [ocr_results release];
+
     return OCR_SUCCESS;
 }
 
@@ -152,40 +157,43 @@ OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size
         || out_size == nullptr) {
         return OCR_FAILURE;
     }
-    
+
     cv::Mat srcimg = decode(encode_buf, encode_buf_size);
     if (srcimg.empty()) {
         return OCR_FAILURE;
     }
-    
+
     auto image = CGImageFromCVMat(srcimg);
-    
+
     auto ocr_results = [[NSMutableArray<VNRecognizedText*> alloc] init];
     auto ocr_error = recognize(image, ocr_results);
-    
+
+    CGImageRelease(image);
+
     if (ocr_error) {
+        [ocr_error release];
         return OCR_FAILURE;
     }
-    
+
     auto count = ocr_results.count > 256 ? 256 : ocr_results.count;
     *out_size = count;
-    
+
     auto width = CGImageGetWidth(image);
     auto height = CGImageGetHeight(image);
-    
-    for (int i = 0; i < count; i++) {
+
+    for (auto i = 0u; i < count; i++) {
         auto candidate = ocr_results[i];
-        
+
         auto range = NSMakeRange(0, [[candidate string] length]);
         auto boxObservation = [candidate boundingBoxForRange:range error:&ocr_error];
-        
+
         if (ocr_error) {
             break;
         }
-        
+
         auto boundingBox = boxObservation ? boxObservation.boundingBox : CGRectZero;
         auto boxRect = VNImageRectForNormalizedRect(boundingBox, width, height);
-        
+
         // Top left
         out_boxes[i * 8] = boxRect.origin.x;
         out_boxes[i * 8 + 1] = height - boxRect.origin.y - boxRect.size.height;
@@ -198,15 +206,18 @@ OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size
         // Bottom left
         out_boxes[i * 8 + 6] = boxRect.origin.x;
         out_boxes[i * 8 + 7] = height - boxRect.origin.y;
-        
+
         out_strs[i] = const_cast<char*>([[candidate string] UTF8String]);
-        
+
         out_scores[i] = candidate.confidence;
     }
-    
+
+    [ocr_results release];
+
     if (ocr_error) {
+        [ocr_error release];
         return OCR_FAILURE;
     }
-    
+
     return OCR_SUCCESS;
 }
