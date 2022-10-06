@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
-project(VisionOCR OBJCXX)
+project(VisionOCR CXX OBJCXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(vnocr STATIC VisionOCR.mm)
-add_executable(vnocr_test main.mm)
+add_executable(vnocr_test main.cpp)
 
 find_package(OpenCV REQUIRED)
 
