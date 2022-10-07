@@ -7,21 +7,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(vnocr STATIC VisionOCR.mm)
 add_executable(vnocr_test main.cpp)
 
-find_package(OpenCV REQUIRED)
+set(CMAKE_FIND_FRAMEWORK ONLY)
+find_library(OpenCV_Framework opencv2 REQUIRED)
+get_filename_component(OpenCV_SEARCH_DIR ${OpenCV_Framework} DIRECTORY)
+message(STATUS "Found opencv2.framework at: ${OpenCV_SEARCH_DIR}")
 
-target_include_directories(vnocr PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_compile_options(vnocr PRIVATE -F${OpenCV_SEARCH_DIR})
+target_compile_options(vnocr_test PRIVATE -F${OpenCV_SEARCH_DIR})
+
+target_link_options(vnocr PRIVATE -F${OpenCV_SEARCH_DIR})
+target_link_options(vnocr_test PRIVATE -F${OpenCV_SEARCH_DIR})
+
 target_link_libraries(vnocr
-    ${OpenCV_LIBS}
+    "-framework opencv2"
     "-framework CoreFoundation"
     "-framework CoreGraphics"
+    "-framework OpenCL"
     "-framework Vision"
 )
 
-target_include_directories(vnocr_test PRIVATE ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(vnocr_test
     vnocr
-    ${OpenCV_LIBS}
+    "-framework opencv2"
     "-framework CoreFoundation"
     "-framework CoreGraphics"
+    "-framework OpenCL"
     "-framework Vision"
 )
