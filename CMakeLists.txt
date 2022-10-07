@@ -12,13 +12,13 @@ find_library(OpenCV_Framework opencv2 REQUIRED)
 get_filename_component(OpenCV_SEARCH_DIR ${OpenCV_Framework} DIRECTORY)
 message(STATUS "Found opencv2.framework at: ${OpenCV_SEARCH_DIR}")
 
-target_compile_options(vnocr PRIVATE -F${OpenCV_SEARCH_DIR})
+target_compile_options(vnocr PUBLIC -F${OpenCV_SEARCH_DIR})
 target_compile_options(vnocr_test PRIVATE -F${OpenCV_SEARCH_DIR})
 
-target_link_options(vnocr PRIVATE -F${OpenCV_SEARCH_DIR})
+target_link_options(vnocr PUBLIC -F${OpenCV_SEARCH_DIR})
 target_link_options(vnocr_test PRIVATE -F${OpenCV_SEARCH_DIR})
 
-target_link_libraries(vnocr
+target_link_libraries(vnocr PUBLIC
     "-framework opencv2"
     "-framework CoreFoundation"
     "-framework CoreGraphics"
