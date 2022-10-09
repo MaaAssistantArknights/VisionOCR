@@ -89,7 +89,7 @@ NSError* recognize(CGImageRef image, NSMutableArray<VNRecognizedText*>* results)
 paddle_ocr_t* PaddleOcrCreate(const char* det_model_dir, const char* rec_model_dir,
                               const char* char_list_file, const char* cls_model_dir)
 {
-    return new paddle_ocr_t();;
+    return new paddle_ocr_t();
 }
 
 void PaddleOcrDestroy(paddle_ocr_t* ocr_ptr)

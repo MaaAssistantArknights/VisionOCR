@@ -1,5 +1,5 @@
 //
-//  main.mm
+//  main.cpp
 //  VisionOCR
 //
 //  Created by hguandl on 30/9/2022.

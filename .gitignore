@@ -2,6 +2,10 @@ build
 .cache
 .vscode
 
+# OpenCV
+opencv-*
+opencv-build
+
 # Created by https://www.toptal.com/developers/gitignore/api/c,cpp,cmake,macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,cpp,cmake,macos
 
