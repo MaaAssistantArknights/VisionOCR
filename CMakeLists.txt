@@ -14,7 +14,7 @@ if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
 endif()
 FetchContent_Declare(
   opencv
-  URL https://github.com/hguandl/VisionOCR/releases/download/v0.1.0/opencv-4.5.3-macos-xcframework.zip
+  URL https://github.com/MaaAssistantArknights/VisionOCR/releases/download/v0.1.0/opencv-4.5.3-macos-xcframework.zip
   URL_HASH SHA256=cab437694d0ef73568b4f401831ad6e86fbb1aa1cd2b618627f08626bc775b15
 )
 FetchContent_MakeAvailable(opencv)
