@@ -31,10 +31,19 @@ OCR_ERROR OCRAPI PaddleOcrRec(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, 
                               char** out_strs, float* out_scores, size_t* out_size,
                               double* out_times, size_t* out_times_size);
 
+OCR_ERROR OCRAPI PaddleOcrRecWithData(paddle_ocr_t* ocr_ptr, int rows, int cols, int type, void* data,
+                                      char** out_strs, float* out_scores, size_t* out_size,
+                                      double* out_times, size_t* out_times_size);
+
 OCR_ERROR OCRAPI PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t encode_buf_size,
                                  bool with_cls,
                                  int* out_boxes, char** out_strs, float* out_scores, size_t* out_size,
                                  double* out_times, size_t* out_times_size);
+
+OCR_ERROR OCRAPI PaddleOcrSystemWithData(paddle_ocr_t* ocr_ptr, int rows, int cols, int type, void* data,
+                                         bool with_cls,
+                                         int* out_boxes, char** out_strs, float* out_scores, size_t* out_size,
+                                         double* out_times, size_t* out_times_size);
 
 #ifdef __cplusplus
 }

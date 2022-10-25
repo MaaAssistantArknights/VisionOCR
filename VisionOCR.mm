@@ -101,20 +101,15 @@ void PaddleOcrDestroy(paddle_ocr_t* ocr_ptr)
     ocr_ptr = nullptr;
 }
 
-OCR_ERROR PaddleOcrRec(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t encode_buf_size,
+OCR_ERROR _PaddleOcrRec(paddle_ocr_t* ocr_ptr, cv::Mat srcimg,
                        char** out_strs, float* out_scores, size_t* out_size,
                        double* out_times, size_t* out_times_size)
 {
     if (ocr_ptr == nullptr
-        || encode_buf == nullptr
+        || srcimg.empty()
         || out_strs == nullptr
         || out_scores == nullptr
         || out_size == nullptr) {
-        return OCR_FAILURE;
-    }
-
-    cv::Mat srcimg = decode(encode_buf, encode_buf_size);
-    if (srcimg.empty()) {
         return OCR_FAILURE;
     }
 
@@ -144,14 +139,12 @@ OCR_ERROR PaddleOcrRec(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t 
     return OCR_SUCCESS;
 }
 
-OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t encode_buf_size,
-                          bool with_cls,
-                          int* out_boxes, char** out_strs, float* out_scores, size_t* out_size,
-                          double* out_times, size_t* out_times_size)
+OCR_ERROR PaddleOcrRec(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t encode_buf_size,
+                       char** out_strs, float* out_scores, size_t* out_size,
+                       double* out_times, size_t* out_times_size)
 {
     if (ocr_ptr == nullptr
         || encode_buf == nullptr
-        || out_boxes == nullptr
         || out_strs == nullptr
         || out_scores == nullptr
         || out_size == nullptr) {
@@ -160,6 +153,43 @@ OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size
 
     cv::Mat srcimg = decode(encode_buf, encode_buf_size);
     if (srcimg.empty()) {
+        return OCR_FAILURE;
+    }
+
+    return _PaddleOcrRec(srcimg, out_strs, out_scores, out_size, out_times, out_times_size);
+}
+
+OCR_ERROR OCRAPI PaddleOcrRecWithData(paddle_ocr_t* ocr_ptr, int rows, int cols, int type, void* data,
+                                      char** out_strs, float* out_scores, size_t* out_size,
+                                      double* out_times, size_t* out_times_size)
+{
+    if (ocr_ptr == nullptr
+        || data == nullptr
+        || out_strs == nullptr
+        || out_scores == nullptr
+        || out_size == nullptr) {
+        return OCR_FAILURE;
+    }
+
+    cv::Mat srcimg(rows, cols, type, data);
+    if (srcimg.empty()) {
+        return OCR_FAILURE;
+    }
+
+    return _PaddleOcrRec(srcimg, out_strs, out_scores, out_size, out_times, out_times_size);
+}
+
+OCR_ERROR _PaddleOcrSystem(paddle_ocr_t* ocr_ptr, cv::Mat srcimg,
+                          bool with_cls,
+                          int* out_boxes, char** out_strs, float* out_scores, size_t* out_size,
+                          double* out_times, size_t* out_times_size)
+{
+    if (ocr_ptr == nullptr
+        || srcimg.empty()
+        || out_boxes == nullptr
+        || out_strs == nullptr
+        || out_scores == nullptr
+        || out_size == nullptr) {
         return OCR_FAILURE;
     }
 
@@ -220,4 +250,48 @@ OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size
     }
 
     return OCR_SUCCESS;
+}
+
+OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf, size_t encode_buf_size,
+                          bool with_cls,
+                          int* out_boxes, char** out_strs, float* out_scores, size_t* out_size,
+                          double* out_times, size_t* out_times_size)
+{
+    if (ocr_ptr == nullptr
+        || encode_buf == nullptr
+        || out_boxes == nullptr
+        || out_strs == nullptr
+        || out_scores == nullptr
+        || out_size == nullptr) {
+        return OCR_FAILURE;
+    }
+
+    cv::Mat srcimg = decode(encode_buf, encode_buf_size);
+    if (srcimg.empty()) {
+        return OCR_FAILURE;
+    }
+
+    return _PaddleOcrSystem(ocr_ptr, srcimg, with_cls, out_boxes, out_strs, out_scores, out_size, out_times, out_times_size);
+}
+
+OCR_ERROR OCRAPI PaddleOcrSystemWithData(paddle_ocr_t* ocr_ptr, int rows, int cols, int type, void* data,
+                                         bool with_cls,
+                                         int* out_boxes, char** out_strs, float* out_scores, size_t* out_size,
+                                         double* out_times, size_t* out_times_size)
+{
+    if (ocr_ptr == nullptr
+        || data == nullptr
+        || out_boxes == nullptr
+        || out_strs == nullptr
+        || out_scores == nullptr
+        || out_size == nullptr) {
+        return OCR_FAILURE;
+    }
+
+    cv::Mat srcimg(rows, cols, type, data);
+    if (srcimg.empty()) {
+        return OCR_FAILURE;
+    }
+
+    return _PaddleOcrSystem(ocr_ptr, srcimg, with_cls, out_boxes, out_strs, out_scores, out_size, out_times, out_times_size);
 }
