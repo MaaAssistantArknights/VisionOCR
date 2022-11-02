@@ -101,6 +101,18 @@ NSError* recognize(CGImageRef image,
     dispatch_group_enter(group);
     [handler performRequests:@[ request ] error:&ocr_error];
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+    [handler release];
+
+    if ([results count] == 0) {
+        handler = [[VNImageRequestHandler alloc] initWithCGImage:image
+                                                         options:@{}];
+        request.revision = 3;
+        dispatch_group_enter(group);
+        [handler performRequests:@[ request ] error:&ocr_error];
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+        [handler release];
+    }
+    [request release];
 
     return ocr_error;
 }
