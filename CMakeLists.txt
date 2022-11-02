@@ -35,8 +35,8 @@ target_link_options(vnocr_test PRIVATE -F${OpenCV_SEARCH_DIR})
 
 target_link_libraries(vnocr PUBLIC
     "-framework opencv2"
-    "-framework CoreFoundation"
     "-framework CoreGraphics"
+    "-framework Foundation"
     "-framework OpenCL"
     "-framework Vision"
 )
@@ -44,8 +44,8 @@ target_link_libraries(vnocr PUBLIC
 target_link_libraries(vnocr_test
     vnocr
     "-framework opencv2"
-    "-framework CoreFoundation"
     "-framework CoreGraphics"
+    "-framework Foundation"
     "-framework OpenCL"
     "-framework Vision"
 )

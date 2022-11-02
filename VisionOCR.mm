@@ -9,7 +9,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
-#import <CoreFoundation/CoreFoundation.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <Vision/Vision.h>
 
@@ -96,7 +95,8 @@ NSError* recognize(CGImageRef image,
           }
           dispatch_group_leave(group);
         }];
-    request.recognitionLanguages = @[ @"zh-Hans", @"en-US" ];
+    request.revision = 2;
+    request.recognitionLanguages = @[ @"zh-Hans", @"zh-Hant", @"en-US" ];
 
     dispatch_group_enter(group);
     [handler performRequests:@[ request ] error:&ocr_error];
