@@ -5,6 +5,7 @@
 //  Created by hguandl on 30/9/2022.
 //
 
+#include <Foundation/Foundation.h>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
@@ -14,7 +15,9 @@
 
 #include "VisionOCR.h"
 
-struct paddle_ocr_t {};
+struct paddle_ocr_t {
+    int profile;
+};
 
 // MARK: Utility functions
 
@@ -70,7 +73,7 @@ CGImageRef CGImageFromCVMat(cv::Mat cvMat) {
     return imageRef;
 }
 
-NSError* recognize(CGImageRef image,
+NSError* recognize(paddle_ocr_t* ocr_ptr, CGImageRef image,
                    NSMutableArray<VNRecognizedText*>* results) {
     auto handler = [[VNImageRequestHandler alloc] initWithCGImage:image
                                                           options:@{}];
@@ -98,26 +101,24 @@ NSError* recognize(CGImageRef image,
     request.revision = 2;
     request.recognitionLanguages = @[ @"zh-Hans", @"zh-Hant", @"en-US" ];
 
+    if (ocr_ptr->profile == 1) {
+        request.recognitionLevel = VNRequestTextRecognitionLevelFast;
+    } else {
+        request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
+    }
+
     dispatch_group_enter(group);
     [handler performRequests:@[ request ] error:&ocr_error];
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-    [handler release];
 
-    if ([results count] == 0) {
-        handler = [[VNImageRequestHandler alloc] initWithCGImage:image
-                                                         options:@{}];
-        request.revision = 3;
-        dispatch_group_enter(group);
-        [handler performRequests:@[ request ] error:&ocr_error];
-        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
-        [handler release];
-    }
+    [handler release];
     [request release];
 
     return ocr_error;
 }
 
-NSError* recognize(cv::Mat srcimg, NSMutableArray<VNRecognizedText*>* results) {
+NSError* recognize(paddle_ocr_t* ocr_ptr, cv::Mat srcimg,
+                   NSMutableArray<VNRecognizedText*>* results) {
     auto size = srcimg.size();
     CGImageRef image;
     if (size.width < 50 || size.height < 50) {
@@ -129,18 +130,25 @@ NSError* recognize(cv::Mat srcimg, NSMutableArray<VNRecognizedText*>* results) {
         image = CGImageFromCVMat(srcimg);
     }
 
-    auto error = recognize(image, results);
+    auto error = recognize(ocr_ptr, image, results);
     CGImageRelease(image);
     return error;
 }
 
 // MARK: API implementations
 
-paddle_ocr_t* PaddleOcrCreate(const char* det_model_dir __unused,
+paddle_ocr_t* PaddleOcrCreate(const char* det_model_dir,
                               const char* rec_model_dir __unused,
                               const char* char_list_file __unused,
                               const char* cls_model_dir __unused) {
-    return new paddle_ocr_t();
+    auto model_name = [NSString stringWithUTF8String:det_model_dir];
+    if ([model_name containsString:@"PaddleOCR"]) {
+        return new paddle_ocr_t{0};
+    } else if ([model_name containsString:@"PaddleCharOCR"]) {
+        return new paddle_ocr_t{1};
+    } else {
+        return nullptr;
+    }
 }
 
 void PaddleOcrDestroy(paddle_ocr_t* ocr_ptr) {
@@ -151,15 +159,15 @@ void PaddleOcrDestroy(paddle_ocr_t* ocr_ptr) {
     ocr_ptr = nullptr;
 }
 
-OCR_ERROR _PaddleOcrRec(cv::Mat srcimg, char** out_strs, float* out_scores,
-                        size_t* out_size) {
+OCR_ERROR _PaddleOcrRec(paddle_ocr_t* ocr_ptr, cv::Mat srcimg, char** out_strs,
+                        float* out_scores, size_t* out_size) {
     if (srcimg.empty() || out_strs == nullptr || out_scores == nullptr ||
         out_size == nullptr) {
         return OCR_FAILURE;
     }
 
     auto ocr_results = [[NSMutableArray<VNRecognizedText*> alloc] init];
-    auto ocr_error = recognize(srcimg, ocr_results);
+    auto ocr_error = recognize(ocr_ptr, srcimg, ocr_results);
 
     if (ocr_error) {
         [ocr_error release];
@@ -195,7 +203,7 @@ OCR_ERROR PaddleOcrRec(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf,
         return OCR_FAILURE;
     }
 
-    return _PaddleOcrRec(srcimg, out_strs, out_scores, out_size);
+    return _PaddleOcrRec(ocr_ptr, srcimg, out_strs, out_scores, out_size);
 }
 
 OCR_ERROR OCRAPI PaddleOcrRecWithData(paddle_ocr_t* ocr_ptr, int rows, int cols,
@@ -213,18 +221,19 @@ OCR_ERROR OCRAPI PaddleOcrRecWithData(paddle_ocr_t* ocr_ptr, int rows, int cols,
         return OCR_FAILURE;
     }
 
-    return _PaddleOcrRec(srcimg, out_strs, out_scores, out_size);
+    return _PaddleOcrRec(ocr_ptr, srcimg, out_strs, out_scores, out_size);
 }
 
-OCR_ERROR _PaddleOcrSystem(cv::Mat srcimg, int* out_boxes, char** out_strs,
-                           float* out_scores, size_t* out_size) {
+OCR_ERROR _PaddleOcrSystem(paddle_ocr_t* ocr_ptr, cv::Mat srcimg,
+                           int* out_boxes, char** out_strs, float* out_scores,
+                           size_t* out_size) {
     if (srcimg.empty() || out_boxes == nullptr || out_strs == nullptr ||
         out_scores == nullptr || out_size == nullptr) {
         return OCR_FAILURE;
     }
 
     auto ocr_results = [[NSMutableArray<VNRecognizedText*> alloc] init];
-    auto ocr_error = recognize(srcimg, ocr_results);
+    auto ocr_error = recognize(ocr_ptr, srcimg, ocr_results);
 
     if (ocr_error) {
         [ocr_error release];
@@ -295,7 +304,8 @@ OCR_ERROR PaddleOcrSystem(paddle_ocr_t* ocr_ptr, const uint8_t* encode_buf,
         return OCR_FAILURE;
     }
 
-    return _PaddleOcrSystem(srcimg, out_boxes, out_strs, out_scores, out_size);
+    return _PaddleOcrSystem(ocr_ptr, srcimg, out_boxes, out_strs, out_scores,
+                            out_size);
 }
 
 OCR_ERROR OCRAPI PaddleOcrSystemWithData(paddle_ocr_t* ocr_ptr, int rows,
@@ -315,5 +325,6 @@ OCR_ERROR OCRAPI PaddleOcrSystemWithData(paddle_ocr_t* ocr_ptr, int rows,
         return OCR_FAILURE;
     }
 
-    return _PaddleOcrSystem(srcimg, out_boxes, out_strs, out_scores, out_size);
+    return _PaddleOcrSystem(ocr_ptr, srcimg, out_boxes, out_strs, out_scores,
+                            out_size);
 }

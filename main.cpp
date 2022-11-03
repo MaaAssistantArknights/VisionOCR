@@ -11,8 +11,9 @@
 #include <iostream>
 
 int main(int argc, const char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Please enter the filename" << std::endl;
+    if (argc != 3) {
+        std::cerr << "Please enter the filename and OCR profile" << std::endl;
+        std::cerr << "Usage: << " << argv[0] << " <filename> PaddleOCR|PaddleCharOCR" << std::endl;
         return 1;
     }
 
@@ -21,7 +22,7 @@ int main(int argc, const char* argv[]) {
     constexpr size_t MaxBoxSize = 256;
     constexpr size_t MaxTextSize = 4096;
 
-    auto ocr = PaddleOcrCreate("", "", "", nullptr);
+    auto ocr = PaddleOcrCreate(argv[2], "", "", nullptr);
 
     int boxes_buffer[MaxBoxSize * 8] = {0};
     char* strs_buffer[MaxBoxSize] = {nullptr};
