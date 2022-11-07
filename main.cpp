@@ -11,18 +11,31 @@
 #include <iostream>
 
 int main(int argc, const char* argv[]) {
-    if (argc != 3) {
-        std::cerr << "Please enter the filename and OCR profile" << std::endl;
-        std::cerr << "Usage: << " << argv[0] << " <filename> PaddleOCR|PaddleCharOCR" << std::endl;
+    const char* filename;
+    const char* profile;
+
+    if (argc == 3) {
+        filename = argv[2];
+        profile = argv[1];
+    } else if (argc == 2) {
+        filename = argv[1];
+        profile = "PaddleOCR";
+    } else {
+        std::cerr << "Usage: " << argv[0] << " [profile] <image file>"
+                  << std::endl;
+        std::cerr << "  profiles: PaddleOCR     - General words (default)"
+                  << std::endl;
+        std::cerr << "            PaddleCharOCR - Only alphabet and digits"
+                  << std::endl;
         return 1;
     }
 
-    cv::Mat image = cv::imread(argv[1]);
+    cv::Mat image = cv::imread(filename);
 
     constexpr size_t MaxBoxSize = 256;
     constexpr size_t MaxTextSize = 4096;
 
-    auto ocr = PaddleOcrCreate(argv[2], "", "", nullptr);
+    auto ocr = PaddleOcrCreate(profile, "", "", nullptr);
 
     int boxes_buffer[MaxBoxSize * 8] = {0};
     char* strs_buffer[MaxBoxSize] = {nullptr};

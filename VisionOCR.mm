@@ -98,7 +98,6 @@ NSError* recognize(paddle_ocr_t* ocr_ptr, CGImageRef image,
           }
           dispatch_group_leave(group);
         }];
-    request.revision = 2;
     request.recognitionLanguages = @[ @"zh-Hans", @"zh-Hant", @"en-US" ];
 
     if (ocr_ptr->profile == 1) {
@@ -112,6 +111,17 @@ NSError* recognize(paddle_ocr_t* ocr_ptr, CGImageRef image,
     dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
 
     [handler release];
+
+    if (results.count == 0 && ocr_ptr->profile == 1) {
+        request.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
+        handler = [[VNImageRequestHandler alloc] initWithCGImage:image
+                                                         options:@{}];
+        dispatch_group_enter(group);
+        [handler performRequests:@[ request ] error:&ocr_error];
+        dispatch_group_wait(group, DISPATCH_TIME_FOREVER);
+        [handler release];
+    }
+
     [request release];
 
     return ocr_error;
